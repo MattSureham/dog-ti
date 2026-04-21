@@ -511,17 +511,9 @@
     50%  { transform: translateY(-12px) rotate(2deg); }
     100% { transform: translateY(0px) rotate(0deg); }
   }
-
-  #lang-cn-btn.active2 { background:#111; color:#fff; }
-  #lang-en-btn.active2 { background:#111; color:#fff; }
-
 </style>
 </head>
 <body>
-<div id="lang-toggle" style="position:fixed;top:14px;right:14px;display:flex;gap:4px;z-index:9999;">
-  <button id="lang-cn-btn" onclick="setLang('cn')" style="padding:6px 12px;font-size:12px;font-weight:700;border:2px solid #111;background:#fff;cursor:pointer;font-family:inherit;">中文</button>
-  <button id="lang-en-btn" onclick="setLang('en')" style="padding:6px 12px;font-size:12px;font-weight:700;border:2px solid #111;background:#fff;cursor:pointer;font-family:inherit;">EN</button>
-</div>
 
 <!-- ═══ 封面页 ═══ -->
 <div class="page active" id="page-home">
@@ -971,24 +963,11 @@ function showPage(id) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   window.scrollTo(0, 0);
-  if (id === 'page-home') {
-    document.title = 'DogTI';
-  }
 }
 
 function startQuiz() {
   currentQ = 0;
   answers = [];
-  selectedOpt = null;
-  document.getElementById('lang-cn-btn').classList.toggle('active2', currentLang === 'cn');
-  document.getElementById('lang-en-btn').classList.toggle('active2', currentLang === 'en');
-  if (currentLang === 'en') {
-    document.getElementById('home-tagline').textContent = T.en.homeTagline;
-    document.getElementById('start-btn-text').textContent = T.en.startBtn;
-  } else {
-    document.getElementById('home-tagline').textContent = T.cn.homeTagline;
-    document.getElementById('start-btn-text').textContent = T.cn.startBtn;
-  }
   renderQuestion();
   showPage('page-quiz');
 }
@@ -1032,25 +1011,14 @@ const quizDogPixels = [
 // 记录上一次显示的狗索引，避免连续重复
 let lastQuizDogIdx = -1;
 
-function getQuestions() {
-  return currentLang === 'en' ? enQuestions : questions;
-}
-
 function renderQuestion() {
-  const qs = getQuestions();
-  const q = qs[currentQ];
+  const q = questions[currentQ];
   selectedOpt = null;
 
   document.getElementById('quiz-counter').textContent = `${currentQ + 1} / ${questions.length}`;
   document.getElementById('progress-fill').style.width = `${((currentQ) / questions.length) * 100}%`;
   document.getElementById('question-text').textContent = q.text;
   document.getElementById('quiz-dog-bubble').textContent = q.hint;
-  // Update UI text based on language
-  if (currentLang === 'en') {
-    document.getElementById('quiz-counter').textContent = `${currentQ + 1} / ${getQuestions().length}`;
-  } else {
-    document.getElementById('quiz-counter').textContent = `${currentQ + 1} / ${questions.length}`;
-  }
 
   // 随机切换题目页小像素狗（不重复上一只）
   let idx;
@@ -1070,10 +1038,7 @@ function renderQuestion() {
 
   const nextBtn = document.getElementById('btn-next');
   nextBtn.classList.remove('enabled');
-  const qLen = getQuestions().length;
-  nextBtn.textContent = currentQ === qLen - 1
-    ? (currentLang === 'cn' ? '查看结果 →' : 'See Result →')
-    : (currentLang === 'cn' ? '继续 →' : 'Next →');
+  nextBtn.textContent = currentQ === questions.length - 1 ? '查看结果 →' : '继续 →';
 }
 
 function selectOption(idx, el) {
@@ -1152,55 +1117,16 @@ function formatDogName(name) {
 
 function showResult() {
   const typeName = calcResult();
-  const mbtiType = (function(){
-    const count = { E:0, I:0, S:0, N:0, T:0, F:0, J:0, P:0 };
-    answers.forEach(d => { if (count[d] !== undefined) count[d]++; });
-    const e = count.E >= count.I ? "E" : "I";
-    const s = count.S >= count.N ? "S" : "N";
-    const t = count.T >= count.F ? "T" : "F";
-    const j = count.J >= count.P ? "J" : "P";
-    return e+s+t+j;
-  })();
-  
-  let data, displayName, dogKey;
-  
-  if (currentLang === 'en') {
-    const enData = enResults[mbtiType];
-    const enName = enDogNames[enData.dog];
-    data = { subname: enData.subname, quote: enData.quote, traits: enData.traits, desc: '', dog: enData.dog };
-    displayName = enName;
-    // Build English description from traits
-    data.desc = enData.traits.join(' · ');
-    document.getElementById('result-desc').textContent = '';
-    // Show traits as desc instead
-  } else {
-    data = results[typeName];
-    displayName = typeName;
-    document.getElementById('result-desc').textContent = data.desc;
-  }
+  const data = results[typeName];
 
-  window._lastDogKey = data.dog;
-  
-  document.getElementById('result-type').innerHTML = formatDogName(displayName);
+  document.getElementById('result-type').innerHTML = formatDogName(typeName);
   document.getElementById('result-subname').textContent = data.subname;
   document.getElementById('result-quote-text').textContent = data.quote;
+  document.getElementById('result-desc').textContent = data.desc;
 
   const now = new Date();
-  if (currentLang === 'cn') {
-    document.getElementById('result-date').textContent = `${now.getMonth()+1}月${now.getDate()}日`;
-    document.getElementById('result-label').textContent = '你的狗格是';
-    document.getElementById('share-label').textContent = '分享结果';
-    document.getElementById('copy-btn-text').textContent = '复制文案';
-    document.getElementById('dl-btn-text').textContent = '下载图片';
-    document.getElementById('retest-btn-text').textContent = '重新测试';
-  } else {
-    document.getElementById('result-date').textContent = `${now.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}`;
-    document.getElementById('result-label').textContent = 'Your Dog Type Is';
-    document.getElementById('share-label').textContent = 'Share Your Result';
-    document.getElementById('copy-btn-text').textContent = 'Copy Text';
-    document.getElementById('dl-btn-text').textContent = 'Download Image';
-    document.getElementById('retest-btn-text').textContent = 'Take Test Again';
-  }
+  document.getElementById('result-date').textContent =
+    `${now.getMonth()+1}月${now.getDate()}日`;
 
   const traitList = document.getElementById('trait-list');
   traitList.innerHTML = '';
@@ -1212,7 +1138,7 @@ function showResult() {
   });
 
   const frame = document.getElementById('result-dog-frame');
-  frame.innerHTML = `<img src="${dogSVGs[data.dog]}" style="width:130px;height:130px;image-rendering:pixelated;object-fit:contain">`;
+  frame.innerHTML = dogSVGs[data.dog] || dogSVGs.philosopher;
 
   showPage('page-result');
 }
@@ -1233,242 +1159,7 @@ function shareResult() {
 function retryQuiz() {
   startQuiz();
 }
-
-// ═══════════════════════════════════════════
-// ENGLISH DATA
-// ═══════════════════════════════════════════
-const enQuestions = [
-  { text: "You meet an unfamiliar dog outside. What do you do?", hint: "To socialize or not to socialize",
-    options: [{ key: "A", text: "Charge right in, sniff first — never hesitate to make friends", dim: "E" }, { key: "B", text: "Watch from the side, approach slowly once it's safe", dim: "I" }, { key: "C", text: "Walk around — not feeling social today", dim: "I" }] },
-  { text: "You spot a path you've never taken before. What's your move?", hint: "To turn or not to turn",
-    options: [{ key: "A", text: "Turn in immediately — not knowing where it leads is exactly why", dim: "N" }, { key: "B", text: "Make a mental note, come back better prepared next time", dim: "J" }, { key: "C", text: "Walked two steps in, decided the original path was fine after all", dim: "S" }] },
-  { text: "Your best dog's being picked on by a bigger dog. How do you react?", hint: "What's your first move",
-    options: [{ key: "A", text: "Step in immediately, block that dog first", dim: "T" }, { key: "B", text: "Rush over and huddle close to your best friend", dim: "F" }, { key: "C", text: "Assess the size difference first, then decide how to act", dim: "S" }] },
-  { text: "You're sleeping soundly — what are you doing in your dream?", hint: "Your dreams are more honest than you",
-    options: [{ key: "A", text: "Running wild on a massive field, no end in sight, running until I float", dim: "P" }, { key: "B", text: "With a very best friend, cuddled up together, warm and safe", dim: "F" }, { key: "C", text: "Found a mysterious door I've never seen — no idea what's behind it, but I have to open it", dim: "N" }] },
-  { text: "You're in a great mood and a stranger wants to pet you.", hint: "Your first reaction",
-    options: [{ key: "A", text: "Lean right into them — go ahead, pet away!", dim: "E" }, { key: "B", text: "Give them a quick sniff, decide they're okay, let them pet a couple times", dim: "S" }, { key: "C", text: "Step back — we're not there yet", dim: "I" }] },
-  { text: "You're napping and a sudden noise outside jolts you awake.", hint: "Your first reaction",
-    options: [{ key: "A", text: "Jump up immediately and go check — can't sleep without knowing", dim: "P" }, { key: "B", text: "Lift my head to confirm it's safe, then go back to sleep", dim: "J" }, { key: "C", text: "Stare at the door, running through every possible scenario in my head", dim: "N" }] },
-  { text: "You're exhausted today, but someone keeps wanting to play with you.", hint: "How do you handle it",
-    options: [{ key: "A", text: "Play along — it's tiring but seeing them happy makes it worth it", dim: "F" }, { key: "B", text: "Find a spot and lie down — ignoring them", dim: "I" }, { key: "C", text: "Hang in for a while, then walk away — the gesture counts", dim: "T" }] },
-  { text: "You're hanging out alone in a park — what are you doing?", hint: "What are you like when you're by yourself",
-    options: [{ key: "A", text: "Wandering through the crowd, checking this and sniffing that", dim: "E" }, { key: "B", text: "Found a quiet corner, gazing into the distance", dim: "I" }, { key: "C", text: "Thinking about something I've been trying to figure out lately", dim: "N" }] },
-  { text: "A bunch of dogs are playing and one suggests going somewhere new. Your move?", hint: "To follow or not to follow",
-    options: [{ key: "A", text: "Yes! Let's go, right now!", dim: "P" }, { key: "B", text: "First — where is it and how far?", dim: "J" }, { key: "C", text: "Doesn't matter to me — wherever, I'll follow", dim: "S" }] },
-  { text: "You did something you think is really cool. Your reaction?", hint: "Do you tell anyone?",
-    options: [{ key: "A", text: "Want everyone to know — spin around in circles right there", dim: "E" }, { key: "B", text: "Feel good about it internally, don't say anything", dim: "I" }, { key: "C", text: "Already thinking about the next thing to do", dim: "T" }] },
-  { text: "You can't decide what to eat. What's your reaction?", hint: "This moment reveals a lot about you",
-    options: [{ key: "A", text: "Anything works — wasting time deliberating this seems silly", dim: "P" }, { key: "B", text: "Think it through carefully, lock in the one I want most", dim: "J" }, { key: "C", text: "The more I think, the more options appear, end up more confused", dim: "N" }] },
-  { text: "Last question: if you could choose, what kind of dog life would you want?", hint: "Think carefully — this is your true aspiration",
-    options: [{ key: "A", text: "Meet new friends every day, travel to many places, sniff the whole world", dim: "E" }, { key: "B", text: "Have that one person who really gets me, just being quietly together", dim: "I" }, { key: "C", text: "Completely free, go wherever I want, no leash, no rules", dim: "P" }] }
-];
-
-const enResults = {
-  "ENTJ": { subname: "Don't worry, I've got this", quote: "It's not that I'm controlling — you all just move too slow.",
-    traits: ["Keeps promises, no废话", "Sees through every loophole instantly", "People depend on you yet feel your pressure", "Born organizer"], dog: "doberman" },
-  "ENTP": { subname: "IQ online, no brakes", quote: "I'm just helping you see possibilities you haven't noticed.",
-    traits: ["So many ideas you can't keep up", "Always wins debates but unclear why", "Topics jump constantly by default", "Fear of boredom is real"], dog: "bordercollie" },
-  "ENFJ": { subname: "Full-time emotional contractor", quote: "You go first, I'm fine. Really.",
-    traits: ["First to sense bad vibes", "Self-sacrifices to help everyone", "Cry only after making sure others are okay", "Fastest to reply in group chats"], dog: "goldenretriever" },
-  "ENFP": { subname: "Human vortex of curiosity", quote: "Wait! This is also fun! Don't close that!",
-    traits: ["Running five new directions at once", "Genuinely enthusiastic but focus lasts two weeks", "Makes friends faster than remembering names", "Boredom is their nemesis"], dog: "beagle" },
-  "ESTJ": { subname: "Reliability is my highest honor", quote: "We said X time — isn't that basic?",
-    traits: ["Schedule packed solid", "Late people get remembered", "Says 'no problem' only after checking every detail", "Naturally trustworthy"], dog: "germanshepherd" },
-  "ESTP": { subname: "Human random event generator", quote: "Plans? What plans? Do I have plans?",
-    traits: ["No guarantee you'll remember today's agreement tomorrow", "Always creating chaos", "Disappearing is a normal occurrence", "But damn it's fun when things get rolling"], dog: "husky" },
-  "ESFJ": { subname: "Can't say no to anyone", quote: "I'll help, I'll help, help everyone, it's really no trouble.",
-    traits: ["Can't get 'I don't want to' out of their mouth", "Only realizes they're exhausted after helping", "Happy when needed", "Knows everyone's preferences best"], dog: "labrador" },
-  "ESFP": { subname: "Must look good going out", quote: "Life is short, today's look is non-negotiable.",
-    traits: ["Born for the camera", "Steps in to save any dying vibe instantly", "Instagram more honest than a diary", "Can rescue the most boring room"], dog: "poodle" },
-  "INTJ": { subname: "I'm not aloof, I'm filtering", quote: "It's not that I don't care — you just haven't earned seeing me care.",
-    traits: ["High bar for entry, rock-solid once you're in", "Deadpan face, full internal drama", "Would rather figure it out alone than explain", "Reviews every detail before sleep"], dog: "shiba" },
-  "INTP": { subname: "Large-scale walking daydream device", quote: "Had a brilliant idea just now. It's gone now.",
-    traits: ["Looks fierce outside, actually a softie inside", "Brain channel always on air", "Too lazy to explain but figured it out long ago", "Might be a genius while staring into space"], dog: "alaskan" },
-  "INFJ": { subname: "Smile assassin", quote: "I'm fine. (I'm not. But I've got it handled.)",
-    traits: ["Healing others is本能", "Secretly falls apart then reboots", "'I'm fine' almost always means otherwise", "Empathy radar on 24/7"], dog: "samoyed" },
-  "INFP": { subname: "Architect of inner worlds", quote: "The third verse of this song made me cry. You wouldn't understand.",
-    traits: ["Inner universe larger than reality", "Obsessive standards for beauty", "Hard to express but feels everything", "Loves fully the moment truly understood"], dog: "maltese" },
-  "ISTJ": { subname: "Stubby legs, unlimited execution", quote: "Said I'd finish it today — finishing at 2am counts.",
-    traits: ["To-do lists never carry over", "Missing a deadline keeps you up at night", "So reliable it's actually stressful for others", "'Good enough' is an alien concept"], dog: "corgi" },
-  "ISTP": { subname: "Silent problem-solver", quote: "Nothing to say — already handled it.",
-    traits: ["Few words but each one counts", "Puzzle-solving hands that work eerie magic", "No explanation needed, results speak", "Depended on but dislikes being disturbed"], dog: "chow" },
-  "ISFJ": { subname: "Most attentive person alive", quote: "You didn't mention it, but I remember you brought it up once.",
-    traits: ["Birthdays never forgotten", "Knows your dietary restrictions better than you", "No credit claimed, things just quietly get done", "Being overlooked hurts but they won't say"], dog: "bichon" },
-  "ISFP": { subname: "Impossible to rush", quote: "What's the hurry? Good things take time.",
-    traits: ["Being unmovable is a genuine talent", "Enjoying the moment is their life philosophy", "有自己的审美", "No comparison anxiety, no self-neglect either"], dog: "dachshund" }
-};
-
-const enDogNames = {
-  doberman: "The Doberman That Arrives 3 Steps Ahead",
-  bordercollie: "The Border Collie Who's Blinded Everyone",
-  goldenretriever: "The Golden Retriever More Worried About You Than You",
-  beagle: "The Beagle Who Wants to Sniff Everything",
-  germanshepherd: "The German Shepherd Who's Managed Everyone",
-  husky: "The Husky That Got Lost on a Walk",
-  labrador: "The Labrador That Can't Say No",
-  poodle: "The Poodle That Must Look Good Going Out",
-  shiba: "The Shiba Pretending to Be Calm",
-  alaskan: "The Alaskan That Forgot Their Own Idea",
-  samoyed: "The Samoyed Always Smiling — Only They Know Why",
-  maltese: "The Maltese You Don't Understand",
-  corgi: "The Corgi That Can't Sleep Until It's Done",
-  chow: "The Chow That Doesn't Need You to Worry",
-  bichon: "The Bichon That Remembers You Don't Like Cilantro",
-  dachshund: "The Dachshund That Can't Be Rushed"
-};
-
-// ─── Language system ───
-let currentLang = 'cn';
-
-function setLang(lang) {
-  currentLang = lang;
-  document.getElementById('lang-cn-btn').classList.toggle('active2', lang === 'cn');
-  document.getElementById('lang-en-btn').classList.toggle('active2', lang === 'en');
-  
-  const data = lang === 'cn' ? T : enQuestions;
-  const page = document.querySelector('.page.active')?.id;
-  
-  if (page === 'page-home') {
-    document.getElementById('home-tagline').textContent = lang === 'cn' ? T.cn.homeTagline : T.en.homeTagline;
-    document.getElementById('start-btn-text').textContent = lang === 'cn' ? T.cn.startBtn : T.en.startBtn;
-  } else if (page === 'page-quiz') {
-    renderQuestion();
-  } else if (page === 'page-result') {
-    // Re-render result in new language
-    showResult();
-  }
-}
-
-// ─── Enhanced share: copy text ───
-function copyShareText() {
-  const type = document.getElementById('result-type').textContent;
-  const subname = document.getElementById('result-subname').textContent;
-  const text = currentLang === 'cn'
-    ? `我在 DogTI 测出来是「${type}」${subname}，你是什么狗？🐶\n\n👉 dogti.pages.dev`
-    : `I got "${type}" on DogTI — ${subname}. What's your dog personality? 🐶\n\n👉 dogti.pages.dev`;
-  navigator.clipboard.writeText(text).then(() => {
-    const btn = document.getElementById('copy-btn-text');
-    const orig = currentLang === 'cn' ? T.cn.copyBtn : T.en.copyBtn;
-    btn.textContent = currentLang === 'cn' ? T.cn.copied : T.en.copied;
-    setTimeout(() => btn.textContent = orig, 1500);
-  });
-}
-
-// ─── Share image download ───
-function downloadShareImage() {
-  const canvas = document.getElementById('shareCanvas');
-  const ctx = canvas.getContext('2d');
-  const type = document.getElementById('result-type').textContent;
-  const subname = document.getElementById('result-subname').textContent;
-  const quote = document.getElementById('result-quote-text').textContent;
-  const traits = Array.from(document.querySelectorAll('.trait-tag')).map(t => t.textContent);
-  const dogKey = window._lastDogKey || 'doberman';
-  const dogImg = dogSVGs[dogKey];
-
-  // Background
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, 1080, 1620);
-
-  // Title
-  ctx.fillStyle = '#111111';
-  ctx.font = 'bold 64px -apple-system, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('DogTI', 540, 120);
-
-  // Dog image
-  const img = new Image();
-  img.crossOrigin = 'anonymous';
-  img.onload = () => {
-    ctx.drawImage(img, 390, 160, 300, 300);
-    drawFinal();
-  };
-  img.onerror = drawFinal;
-  img.src = dogImg;
-
-  function drawFinal() {
-    // Type name
-    ctx.fillStyle = '#111111';
-    ctx.font = 'bold 52px -apple-system, sans-serif';
-    ctx.fillText(type, 540, 580);
-
-    // Subname
-    ctx.fillStyle = '#666666';
-    ctx.font = '36px -apple-system, sans-serif';
-    ctx.fillText(subname, 540, 640);
-
-    // Quote box
-    ctx.fillStyle = '#f5f5f5';
-    ctx.fillRect(60, 700, 960, 120);
-    ctx.fillStyle = '#333333';
-    ctx.font = 'italic 32px -apple-system, sans-serif';
-    const lines = wrapText(ctx, '"' + quote + '"', 880);
-    lines.forEach((l, i) => ctx.fillText(l, 540, 755 + i * 40));
-
-    // Traits
-    let tx = 60;
-    let ty = 880;
-    ctx.font = 'bold 28px -apple-system, sans-serif';
-    traits.forEach(t => {
-      const tw = ctx.measureText(t).width + 40;
-      if (tx + tw > 1020) { tx = 60; ty += 60; }
-      ctx.strokeStyle = '#111111';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(tx, ty - 28, tw, 48);
-      ctx.fillStyle = '#111111';
-      ctx.fillText(t, tx + 20, ty);
-      tx += tw + 16;
-    });
-
-    // Bottom
-    ctx.fillStyle = '#aaaaaa';
-    ctx.font = '24px -apple-system, sans-serif';
-    ctx.fillText('dogti.pages.dev', 540, 1540);
-
-    // Download
-    const a = document.createElement('a');
-    a.download = 'dogti-result.png';
-    a.href = canvas.toDataURL('image/png');
-    a.click();
-  }
-}
-
-function wrapText(ctx, text, maxWidth) {
-  const words = text.split(' ');
-  const lines = [];
-  let current = '';
-  words.forEach(w => {
-    const test = current ? current + ' ' + w : w;
-    if (ctx.measureText(test).width > maxWidth && current) {
-      lines.push(current);
-      current = w;
-    } else {
-      current = test;
-    }
-  });
-  if (current) lines.push(current);
-  return lines;
-}
-
-// ─── WeChat share (copy link) ───
-function shareWechat() {
-  const type = document.getElementById('result-type').textContent;
-  const text = currentLang === 'cn'
-    ? `我在 DogTI 测出来是「${type}」，你是什么狗？🐶 dogti.pages.dev`
-    : `I got "${type}" on DogTI. What's your dog personality? 🐶 dogti.pages.dev`;
-  navigator.clipboard.writeText(text);
-  const btn = document.querySelector('.btn-icon');
-  const orig = btn.textContent;
-  btn.textContent = '✓';
-  setTimeout(() => btn.textContent = orig, 1200);
-}
-
-// ─── Override startQuiz to set active lang button ───
-const _origStartQuiz = startQuiz;
-// Already defined, just patch the lang button on result page
-
 </script>
 
-<canvas id="shareCanvas" width="1080" height="1620" style="display:none"></canvas>
 </body>
 </html>
