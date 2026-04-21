@@ -1,2 +1,38 @@
-node_modules/
+# Created by https://www.toptal.com/developers/gitignore/api/macos,linux,windows,python,vim
+# Edit at https://www.toptal.com/developers/gitignore
+
+### Linux ###
+*~
+
+### macOS ###
 .DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+### Windows ###
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+### Python ###
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+*.egg-info/
+.eggs/
+
+### Vim ###
+*.swp
+*.swo
+
+### IDE ###
+.idea/
+.vscode/
+*.sublime-*
+
+### Misc ###
+node_modules/
+.env
+.env.local
