@@ -1,6 +1,42 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Quiz",
+  "name": "DogTI",
+  "description": "Find your dog personality type in 12 questions. A fun MBTI-style quiz that matches you with one of 16 dog breeds.",
+  "url": "https://dogti.pages.dev",
+  "image": "https://dogti.pages.dev/assets/DOGTI%E6%A0%87%E9%A2%98.png",
+  "author": {
+    "@type": "Person",
+    "name": "Jonathan Li",
+    "url": "https://xhslink.com/m/7UBo6YIeyPn"
+  },
+  "about": {
+    "@type": "Thing",
+    "name": "Personality Type",
+    "description": "16 personality types based on MBTI, each matched with a dog breed"
+  },
+  "hasPart": [
+    {"@type": "Question", "name": "Meeting an unfamiliar dog"},
+    {"@type": "Question", "name": "Choosing a new path"},
+    {"@type": "Question", "name": "Defending a friend"},
+    {"@type": "Question", "name": "Dreaming"},
+    {"@type": "Question", "name": "A stranger wants to pet you"},
+    {"@type": "Question", "name": "Sudden noise while napping"},
+    {"@type": "Question", "name": "Someone wants to play when you're tired"},
+    {"@type": "Question", "name": "Alone in a park"},
+    {"@type": "Question", "name": "Group proposes a new place"},
+    {"@type": "Question", "name": "You did something impressive"},
+    {"@type": "Question", "name": "Can't decide what to eat"},
+    {"@type": "Question", "name": "Ideal dog life"}
+  ]
+}
+</script>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>DogTI</title>
@@ -490,6 +526,29 @@
 
   .btn-share:active, .btn-retry:active { opacity: 0.7; }
 
+  .result-share-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .btn-share-sm {
+    flex: 1;
+    padding: 10px 8px;
+    border: 1.5px solid #111;
+    background: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    transition: all 0.1s;
+  }
+  .btn-share-sm:active { transform: translate(1px,1px); }
+  .btn-share-sm.primary { background: #111; color: #fff; }
+
   /* ─── 像素狗 SVG helpers ─── */
   svg { image-rendering: pixelated; display: block; }
 
@@ -676,6 +735,12 @@
   <div class="divider"></div>
 
   <div class="result-desc" id="result-desc"></div>
+
+  <div class="result-share-row">
+    <button class="btn-share-sm" onclick="copyShareLink()"><span>🔗</span> <span id="link-btn-text">复制链接</span></button>
+    <button class="btn-share-sm" onclick="copyShareText()"><span>📋</span> <span id="copy-btn-text">复制文案</span></button>
+    <button class="btn-share-sm primary" onclick="downloadShareImage()"><span>🖼</span> <span id="dl-btn-text">下载图片</span></button>
+  </div>
 
   <div class="result-actions">
     <button class="btn-share" onclick="shareResult()">
@@ -976,7 +1041,31 @@ function showPage(id) {
   }
 }
 
+// Restore from URL hash if present
+function getSharedAnswers() {
+  const hash = window.location.hash.slice(1);
+  if (!hash) return null;
+  try {
+    const decoded = atob(hash);
+    const validDims = ['E','I','S','N','T','F','J','P'];
+    const ans = decoded.split(',').filter(d => validDims.includes(d));
+    return ans.length === 12 ? ans : null;
+  } catch { return null; }
+}
+
 function startQuiz() {
+  // Check for shared result in URL
+  const shared = getSharedAnswers();
+  if (shared && shared.length === 12) {
+    answers = shared;
+    currentQ = 11; // Jump to last question
+    selectedOpt = null;
+    // Show result directly
+    document.getElementById('result-type').textContent = '';
+    showResult();
+    return;
+  }
+
   currentQ = 0;
   answers = [];
   selectedOpt = null;
@@ -1190,6 +1279,7 @@ function showResult() {
     document.getElementById('result-date').textContent = `${now.getMonth()+1}月${now.getDate()}日`;
     document.getElementById('result-label').textContent = '你的狗格是';
     document.getElementById('share-label').textContent = '分享结果';
+    document.getElementById('link-btn-text').textContent = '复制链接';
     document.getElementById('copy-btn-text').textContent = '复制文案';
     document.getElementById('dl-btn-text').textContent = '下载图片';
     document.getElementById('retest-btn-text').textContent = '重新测试';
@@ -1197,6 +1287,7 @@ function showResult() {
     document.getElementById('result-date').textContent = `${now.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}`;
     document.getElementById('result-label').textContent = 'Your Dog Type Is';
     document.getElementById('share-label').textContent = 'Share Your Result';
+    document.getElementById('link-btn-text').textContent = 'Copy Link';
     document.getElementById('copy-btn-text').textContent = 'Copy Text';
     document.getElementById('dl-btn-text').textContent = 'Download Image';
     document.getElementById('retest-btn-text').textContent = 'Take Test Again';
@@ -1213,6 +1304,20 @@ function showResult() {
 
   const frame = document.getElementById('result-dog-frame');
   frame.innerHTML = `<img src="${dogSVGs[data.dog]}" style="width:130px;height:130px;image-rendering:pixelated;object-fit:contain">`;
+
+  // Save result to URL hash for sharing
+  const mbtiType = (function(){
+    const count = { E:0, I:0, S:0, N:0, T:0, F:0, J:0, P:0 };
+    answers.forEach(d => { if (count[d] !== undefined) count[d]++; });
+    const e = count.E >= count.I ? "E" : "I";
+    const s = count.S >= count.N ? "S" : "N";
+    const t = count.T >= count.F ? "T" : "F";
+    const j = count.J >= count.P ? "J" : "P";
+    return e+s+t+j;
+  })();
+  // Encode answers as base64 for sharing
+  const shareCode = btoa(answers.join(','));
+  window.history.replaceState(null, '', '#' + shareCode);
 
   showPage('page-result');
 }
@@ -1320,6 +1425,17 @@ const enDogNames = {
 
 // ─── Language system ───
 let currentLang = 'cn';
+
+
+function copyShareLink() {
+  const link = window.location.href.split('#')[0] + window.location.hash;
+  navigator.clipboard.copy(link).then(() => {
+    const btn = document.getElementById('link-btn-text');
+    const orig = currentLang === 'cn' ? '复制链接' : 'Copy Link';
+    btn.textContent = currentLang === 'cn' ? '已复制！' : 'Copied!';
+    setTimeout(() => btn.textContent = orig, 1500);
+  });
+}
 
 function setLang(lang) {
   currentLang = lang;
